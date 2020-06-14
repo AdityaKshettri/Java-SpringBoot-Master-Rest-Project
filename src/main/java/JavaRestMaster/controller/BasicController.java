@@ -1,4 +1,4 @@
-package JavaRestMaster.restcontroller;
+package JavaRestMaster.controller;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,14 +18,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import JavaRestMaster.entity.Basic;
+import JavaRestMaster.entity.User;
 import JavaRestMaster.service.BasicService;
+import JavaRestMaster.service.UserService;
 
 @RestController
 @RequestMapping("/basics")
-public class BasicRestController 
+public class BasicController 
 {
 	@Autowired
 	private BasicService basicService;
+	
+	@Autowired
+	private UserService userService;
 	
 	@GetMapping("")
 	public ResponseEntity<?> all() {
@@ -35,15 +40,14 @@ public class BasicRestController
 					.status(HttpStatus.NOT_FOUND)
 					.body("No basic found");
 		}
-		return ResponseEntity
-				.status(HttpStatus.OK)
-				.body(basics);
+		return ResponseEntity.ok(basics);
 	}
 	
 	@PostMapping("")
-	public ResponseEntity<?> save(@RequestBody Basic form, HttpServletRequest request)
+	public ResponseEntity<?> save(@RequestBody Basic basicData, HttpServletRequest request)
 	{
-		Basic theBasic = basicService.save(form);
+		basicData.setUser(userService.getCurrentUser());
+		Basic theBasic = basicService.save(basicData);
 		return ResponseEntity
 				.status(HttpStatus.CREATED)
 				.body(theBasic);
@@ -53,7 +57,6 @@ public class BasicRestController
 	public ResponseEntity<?> get(@PathVariable("id") int id) 
 	{
 		Optional<Basic> theBasic = basicService.findById(id);
-		System.out.println("==>> " + theBasic);
 		if(theBasic.isPresent()) {
 			return ResponseEntity
 					.status(HttpStatus.FOUND)
@@ -93,5 +96,19 @@ public class BasicRestController
         return ResponseEntity
 				.status(HttpStatus.NOT_FOUND)
 				.body("Basic not found at given id");
+	}
+	
+	@GetMapping("/user")
+	public ResponseEntity<?> findBasicByCurrentUser()
+	{
+		User currentUser = userService.getCurrentUser();
+		List<Basic> basics = basicService.findByUser(currentUser);
+		if(basics.isEmpty()) 
+		{
+			return ResponseEntity
+					.status(HttpStatus.NOT_FOUND)
+					.body("No Basic present for current user.");
+		}
+		return ResponseEntity.ok(basics);
 	}
 }
